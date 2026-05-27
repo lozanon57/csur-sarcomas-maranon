@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/csur-sarcomas-maranon/sw.js', { scope: '/csur-sarcomas-maranon/' })})}
