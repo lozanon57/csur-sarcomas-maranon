@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Search, Filter, X, ChevronDown, ChevronUp, AlertCircle, Microscope } from 'lucide-react'
+import { Search, Filter, X, ChevronDown, ChevronUp, AlertCircle, Microscope, FlaskConical, BookOpen, Lightbulb, Award } from 'lucide-react'
 import { useAppI18n } from '../App'
 import { useSearch } from '../hooks/useSearch'
-import type { Sarcoma, Comportamiento, Estirpe, Poblacion } from '../types'
+import type { Sarcoma, Comportamiento, EnsayoHistorico } from '../types'
+import { getEnsayosHistoricosForSarcoma } from '../data/ensayos_historicos'
 
 // ─── Behaviour badge ──────────────────────────────────────────────────────────
 function BehaviourBadge({ c }: { c: Comportamiento }) {
@@ -51,13 +52,81 @@ function TumourCard({ s, onClick }: { s: Sarcoma; onClick: () => void }) {
   )
 }
 
+// ─── Evidence level badge ─────────────────────────────────────────────────────
+const EVIDENCE_COLOR: Record<string, string> = {
+  Ia:  'bg-green-100 text-green-800',
+  Ib:  'bg-green-50 text-green-700',
+  IIa: 'bg-blue-100 text-blue-800',
+  IIb: 'bg-blue-50 text-blue-700',
+  III: 'bg-yellow-100 text-yellow-800',
+  IV:  'bg-gray-100 text-gray-600',
+}
+
+// ─── Landmark trial card ──────────────────────────────────────────────────────
+function LandmarkTrialCard({ trial }: { trial: EnsayoHistorico }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="border border-indigo-100 rounded-xl overflow-hidden bg-white">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full text-left p-3 flex items-start gap-3 hover:bg-indigo-50/50 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Award size={14} className="text-indigo-700" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-xs text-indigo-900">{trial.nombre}</span>
+            <span className="text-xs text-gray-400">{trial.año}</span>
+            <span className={`badge text-xs ${EVIDENCE_COLOR[trial.nivel_evidencia] ?? 'bg-gray-100 text-gray-600'}`}>
+              Evidencia {trial.nivel_evidencia}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5 italic leading-snug">{trial.publicacion}</p>
+          {!expanded && (
+            <p className="text-xs text-indigo-700 mt-1 font-medium leading-snug line-clamp-2">{trial.resultado_clave}</p>
+          )}
+        </div>
+        {expanded ? <ChevronUp size={14} className="text-gray-400 flex-shrink-0 mt-1" /> : <ChevronDown size={14} className="text-gray-400 flex-shrink-0 mt-1" />}
+      </button>
+
+      {expanded && (
+        <div className="px-3 pb-3 space-y-2 border-t border-indigo-50">
+          <div className="pt-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Pregunta clínica</p>
+            <p className="text-xs text-gray-700 italic leading-relaxed">{trial.pregunta_clinica}</p>
+          </div>
+          {trial.n_pacientes && (
+            <p className="text-xs text-gray-500">n = <span className="font-semibold text-gray-700">{trial.n_pacientes}</span> pacientes · {trial.tipo_estudio}</p>
+          )}
+          <div className="bg-indigo-50 rounded-lg p-2.5">
+            <p className="text-xs font-semibold text-indigo-800 mb-1">Resultado clave</p>
+            <p className="text-xs text-indigo-900 leading-relaxed">{trial.resultado_clave}</p>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-2.5 flex gap-2">
+            <Lightbulb size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-amber-800 mb-0.5">Impacto en práctica clínica</p>
+              <p className="text-xs text-amber-900 leading-relaxed">{trial.impacto_practica}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 leading-snug">{trial.cita_completa}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Detail section ───────────────────────────────────────────────────────────
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(true)
   return (
     <div className="border-b border-gray-100 last:border-0">
       <button onClick={() => setOpen(v => !v)} className="flex items-center justify-between w-full py-3 px-4 text-left">
-        <span className="text-sm font-semibold text-gray-800">{title}</span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+          {icon}
+          {title}
+        </span>
         {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </button>
       {open && <div className="px-4 pb-4 text-sm text-gray-700 space-y-1">{children}</div>}
@@ -65,14 +134,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+// ─── Tab navigation for detail panel ─────────────────────────────────────────
+type DetailTab = 'overview' | 'treatment' | 'evidence'
+
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (k: string) => string }) {
+  const [tab, setTab] = useState<DetailTab>('overview')
+  const landmarkTrials = getEnsayosHistoricosForSarcoma(s.id)
+
+  const tabs: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'overview',   label: 'Biología',     icon: <Microscope size={13} /> },
+    { id: 'treatment',  label: 'Tratamiento',  icon: <FlaskConical size={13} /> },
+    { id: 'evidence',   label: `Evidencia${landmarkTrials.length > 0 ? ` (${landmarkTrials.length})` : ''}`, icon: <BookOpen size={13} /> },
+  ]
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-primary-800 text-white pt-safe px-4 pb-3">
-        <div className="flex items-center gap-3 mt-3">
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+      <div className="bg-primary-800 text-white pt-safe px-4 pb-0">
+        <div className="flex items-center gap-3 mt-3 pb-3">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0">
             <X size={20} />
           </button>
           <div className="flex-1 min-w-0">
@@ -80,75 +161,150 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
             <div className="flex flex-wrap gap-1.5 mt-1">
               <BehaviourBadge c={s.comportamiento} />
               <EstirpeBadge e={s.estirpe} />
+              {s.poblacion === 'pediatrico' && <span className="badge bg-orange-400/30 text-orange-100 text-xs">Pediátrico</span>}
             </div>
           </div>
+        </div>
+
+        {/* Tab bar */}
+        <div className="flex gap-0 border-t border-white/20">
+          {tabs.map(tb => (
+            <button
+              key={tb.id}
+              onClick={() => setTab(tb.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors border-b-2
+                ${tab === tb.id
+                  ? 'border-white text-white'
+                  : 'border-transparent text-blue-300 hover:text-blue-100'}`}
+            >
+              {tb.icon}
+              {tb.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto pb-6">
-        <div className="card mx-3 mt-3 divide-y divide-gray-100">
-          <Section title={t('buscador.epidemiologia')}>
-            <p className="leading-relaxed">{s.epidemiologia}</p>
-          </Section>
-          <Section title={t('buscador.histologia')}>
-            <p className="leading-relaxed">{s.histologia}</p>
-          </Section>
-          <Section title={t('buscador.ihq')}>
-            <div className="flex flex-wrap gap-1.5">
-              {s.ihq.map(m => (
-                <span key={m} className="badge bg-blue-50 text-blue-800 font-mono text-xs">{m}</span>
-              ))}
-            </div>
-          </Section>
-          <Section title={t('buscador.molecular')}>
-            <div className="space-y-3">
-              {s.marcadores_moleculares.map((m, i) => (
-                <div key={i} className="bg-purple-50 rounded-lg p-3">
-                  <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
-                  {m.frecuencia && <p className="text-xs text-purple-700 mt-0.5">Frecuencia: {m.frecuencia}</p>}
-                  {m.relevancia_terapeutica && (
-                    <p className="text-xs text-purple-800 mt-1 leading-snug">{m.relevancia_terapeutica}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Section>
-          <Section title={t('buscador.estadificacion')}>
-            <p className="leading-relaxed">{s.estadificacion}</p>
-          </Section>
-          <Section title={t('buscador.primera_linea')}>
-            <p className="leading-relaxed">{s.tratamiento_primera_linea}</p>
-          </Section>
-          {s.tratamiento_adyuvante && (
-            <Section title={t('buscador.adyuvante')}>
-              <p className="leading-relaxed">{s.tratamiento_adyuvante}</p>
+
+        {/* ── TAB: OVERVIEW (Biology) ── */}
+        {tab === 'overview' && (
+          <div className="card mx-3 mt-3 divide-y divide-gray-100">
+            <Section title={t('buscador.epidemiologia')} icon={<span className="text-base">📊</span>}>
+              <p className="leading-relaxed">{s.epidemiologia}</p>
             </Section>
-          )}
-          {s.tratamiento_paliativo && (
-            <Section title={t('buscador.paliativo')}>
-              <p className="leading-relaxed">{s.tratamiento_paliativo}</p>
+            <Section title={t('buscador.histologia')} icon={<span className="text-base">🔬</span>}>
+              <p className="leading-relaxed">{s.histologia}</p>
             </Section>
-          )}
-          <Section title={t('buscador.seguimiento')}>
-            <p className="leading-relaxed">{s.seguimiento}</p>
-          </Section>
-          <Section title={t('buscador.pronostico')}>
-            <p className="leading-relaxed">{s.pronostico}</p>
-          </Section>
-          {s.perlas_clinicas.length > 0 && (
-            <Section title={t('buscador.perlas')}>
-              <div className="space-y-2">
-                {s.perlas_clinicas.map((p, i) => (
-                  <div key={i} className="flex gap-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
-                    <span className="text-amber-500 flex-shrink-0 mt-0.5">★</span>
-                    <p className="text-xs leading-relaxed text-amber-900">{p}</p>
-                  </div>
+            <Section title={t('buscador.ihq')} icon={<span className="text-base">🧫</span>}>
+              <div className="flex flex-wrap gap-1.5">
+                {s.ihq.map(m => (
+                  <span key={m} className="badge bg-blue-50 text-blue-800 font-mono text-xs">{m}</span>
                 ))}
               </div>
             </Section>
-          )}
-        </div>
+            <Section title={t('buscador.molecular')} icon={<span className="text-base">🧬</span>}>
+              <div className="space-y-3">
+                {s.marcadores_moleculares.map((m, i) => (
+                  <div key={i} className="bg-purple-50 rounded-lg p-3">
+                    <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
+                    {m.frecuencia && <p className="text-xs text-purple-700 mt-0.5">Frecuencia: {m.frecuencia}</p>}
+                    {m.relevancia_terapeutica && (
+                      <p className="text-xs text-purple-800 mt-1 leading-snug">{m.relevancia_terapeutica}</p>
+                    )}
+                  </div>
+                ))}
+                {s.marcadores_moleculares.length === 0 && (
+                  <p className="text-xs text-gray-400 italic">Sin alteraciones moleculares características conocidas.</p>
+                )}
+              </div>
+            </Section>
+            <Section title={t('buscador.estadificacion')} icon={<span className="text-base">📋</span>}>
+              <p className="leading-relaxed">{s.estadificacion}</p>
+            </Section>
+            <Section title={t('buscador.pronostico')} icon={<span className="text-base">📈</span>}>
+              <p className="leading-relaxed">{s.pronostico}</p>
+            </Section>
+            {s.perlas_clinicas.length > 0 && (
+              <Section title={t('buscador.perlas')} icon={<span className="text-base">⭐</span>}>
+                <div className="space-y-2">
+                  {s.perlas_clinicas.map((p, i) => (
+                    <div key={i} className="flex gap-2 p-2.5 bg-amber-50 rounded-lg border border-amber-100">
+                      <Lightbulb size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs leading-relaxed text-amber-900">{p}</p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB: TREATMENT ── */}
+        {tab === 'treatment' && (
+          <div className="card mx-3 mt-3 divide-y divide-gray-100">
+            <Section title={t('buscador.primera_linea')} icon={<span className="text-base">💊</span>}>
+              <p className="leading-relaxed">{s.tratamiento_primera_linea}</p>
+            </Section>
+            {s.tratamiento_adyuvante && (
+              <Section title={t('buscador.adyuvante')} icon={<span className="text-base">🔄</span>}>
+                <p className="leading-relaxed">{s.tratamiento_adyuvante}</p>
+              </Section>
+            )}
+            {s.tratamiento_paliativo && (
+              <Section title={t('buscador.paliativo')} icon={<span className="text-base">🏥</span>}>
+                <p className="leading-relaxed">{s.tratamiento_paliativo}</p>
+              </Section>
+            )}
+            <Section title={t('buscador.seguimiento')} icon={<span className="text-base">📅</span>}>
+              <p className="leading-relaxed">{s.seguimiento}</p>
+            </Section>
+          </div>
+        )}
+
+        {/* ── TAB: EVIDENCE (Landmark trials) ── */}
+        {tab === 'evidence' && (
+          <div className="mx-3 mt-3 space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <BookOpen size={15} className="text-indigo-600" />
+              <p className="text-xs font-semibold text-gray-600">Ensayos que cambiaron la práctica clínica</p>
+            </div>
+            {landmarkTrials.length === 0 ? (
+              <div className="card p-6 text-center">
+                <p className="text-2xl mb-2">📚</p>
+                <p className="text-sm text-gray-500">No hay ensayos históricos específicos registrados para este subtipo.</p>
+                <p className="text-xs text-gray-400 mt-1">Consulta las secciones de STS generales para evidencia aplicable.</p>
+              </div>
+            ) : (
+              <>
+                {/* Universal STS trials */}
+                {(() => {
+                  const universal = landmarkTrials.filter(e => e.histologias.includes('all_sts'))
+                  const specific  = landmarkTrials.filter(e => !e.histologias.includes('all_sts'))
+                  return (
+                    <>
+                      {specific.length > 0 && (
+                        <>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 px-1">Específicos de este subtipo</p>
+                          {specific.map(trial => <LandmarkTrialCard key={trial.id} trial={trial} />)}
+                        </>
+                      )}
+                      {universal.length > 0 && (
+                        <>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 px-1 mt-4">Aplicables a STS en general</p>
+                          {universal.map(trial => <LandmarkTrialCard key={trial.id} trial={trial} />)}
+                        </>
+                      )}
+                    </>
+                  )
+                })()}
+                <p className="text-xs text-gray-400 text-center pt-2">
+                  Ordenados cronológicamente · Fuentes: PubMed, NCCN 2025, ESMO 2025
+                </p>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

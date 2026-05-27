@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, GitBranch, FlaskConical, BookOpen, Info, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Search, GitBranch, FlaskConical, BookOpen, Info, AlertTriangle, CheckCircle2, Lightbulb, Award } from 'lucide-react'
 import { useAppI18n } from '../App'
+import { SARCOMAS } from '../data/sarcomas'
+import { ENSAYOS_HISTORICOS } from '../data/ensayos_historicos'
 
 const MODULES = [
   { to: '/buscador',  icon: Search,       color: 'bg-primary-700', label_key: 'home.buscador_title',  desc_key: 'home.buscador_desc' },
@@ -13,6 +15,21 @@ const MODULES = [
 
 export default function PageHome() {
   const { t } = useAppI18n()
+
+  // Daily pearl — rotates each day using date as seed
+  const dailyPearl = useMemo(() => {
+    const allPerlas = SARCOMAS.flatMap(s =>
+      s.perlas_clinicas.map(p => ({ texto: p, sarcoma: s.nombre }))
+    )
+    const dayIndex = Math.floor(Date.now() / 86_400_000) % allPerlas.length
+    return allPerlas[dayIndex]
+  }, [])
+
+  // Landmark trial of the day
+  const trialOfDay = useMemo(() => {
+    const dayIndex = Math.floor(Date.now() / 86_400_000) % ENSAYOS_HISTORICOS.length
+    return ENSAYOS_HISTORICOS[dayIndex]
+  }, [])
 
   return (
     <div className="p-4 space-y-6 animate-fade-in">
@@ -38,8 +55,8 @@ export default function PageHome() {
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { n: '28+', label: 'Sarcomas' },
-          { n: '15+', label: 'Ensayos' },
+          { n: `${SARCOMAS.length}+`, label: 'Entidades' },
+          { n: `${ENSAYOS_HISTORICOS.length}`, label: 'Landmark' },
           { n: '6', label: 'Algoritmos' },
         ].map(s => (
           <div key={s.label} className="card p-3 text-center">
@@ -48,6 +65,31 @@ export default function PageHome() {
           </div>
         ))}
       </div>
+
+      {/* Daily pearl */}
+      {dailyPearl && (
+        <div className="card p-4 border-l-4 border-amber-400 bg-amber-50">
+          <div className="flex items-center gap-2 mb-2">
+            <Lightbulb size={15} className="text-amber-600 flex-shrink-0" />
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Perla Docente del Día</p>
+          </div>
+          <p className="text-sm text-amber-900 leading-relaxed">{dailyPearl.texto}</p>
+          <p className="text-xs text-amber-600 mt-2 font-medium">— {dailyPearl.sarcoma}</p>
+        </div>
+      )}
+
+      {/* Landmark trial of the day */}
+      {trialOfDay && (
+        <div className="card p-4 border-l-4 border-indigo-400 bg-indigo-50">
+          <div className="flex items-center gap-2 mb-2">
+            <Award size={15} className="text-indigo-600 flex-shrink-0" />
+            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Ensayo Histórico del Día</p>
+          </div>
+          <p className="text-sm font-semibold text-indigo-900">{trialOfDay.nombre} · {trialOfDay.año}</p>
+          <p className="text-xs text-indigo-700 mt-1 leading-relaxed">{trialOfDay.resultado_clave}</p>
+          <p className="text-xs text-indigo-500 mt-1.5 italic">{trialOfDay.cita_completa}</p>
+        </div>
+      )}
 
       {/* Modules */}
       <div>

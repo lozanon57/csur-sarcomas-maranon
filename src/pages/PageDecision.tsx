@@ -4,11 +4,12 @@ import { useAppI18n } from '../App'
 import { ALGORITMOS } from '../data/algoritmos'
 import type { Algoritmo, AlgoritmoNodo } from '../types'
 
-function NodoCard({ nodo, onSi, onNo, onOpcion }: {
+function NodoCard({ nodo, onSi, onNo, onOpcion, onContinuar }: {
   nodo: AlgoritmoNodo
   onSi?: () => void
   onNo?: () => void
   onOpcion?: (siguiente: string) => void
+  onContinuar?: () => void
 }) {
   const colorMap = {
     inicio:     'algo-step',
@@ -65,6 +66,18 @@ function NodoCard({ nodo, onSi, onNo, onOpcion }: {
           ))}
         </div>
       )}
+
+      {/* Continuar button — for transitional nodes (inicio/accion) with no explicit links */}
+      {onContinuar && !nodo.si && !nodo.no && !nodo.opciones && (
+        <div className="px-1">
+          <button
+            onClick={onContinuar}
+            className="w-full py-2.5 px-4 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 animate-pulse-slow"
+          >
+            Continuar <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -74,7 +87,9 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
   const [history, setHistory] = useState<string[]>([])
   const [showRefs, setShowRefs] = useState(false)
 
-  const currentNode = algo.nodos.find(n => n.id === currentId)
+  const currentIndex = algo.nodos.findIndex(n => n.id === currentId)
+  const currentNode = algo.nodos[currentIndex]
+  const nextSequentialNode = algo.nodos[currentIndex + 1]
 
   const navigate = (nextId: string) => {
     setHistory(prev => [...prev, currentId])
@@ -96,7 +111,9 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
 
   if (!currentNode) return null
 
-  const isEnd = !currentNode.si && !currentNode.no && !currentNode.opciones
+  const hasNavigation = !!(currentNode.si || currentNode.no || currentNode.opciones)
+  const isEnd = !hasNavigation && !nextSequentialNode
+  const canContinue = !hasNavigation && !!nextSequentialNode
   const isFirst = history.length === 0
 
   return (
@@ -131,8 +148,18 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
           onSi={currentNode.si ? () => navigate(currentNode.si!) : undefined}
           onNo={currentNode.no ? () => navigate(currentNode.no!) : undefined}
           onOpcion={next => navigate(next)}
+          onContinuar={canContinue ? () => navigate(nextSequentialNode!.id) : undefined}
         />
       </div>
+
+      {/* End banner */}
+      {isEnd && (
+        <div className="mx-4 p-4 bg-green-50 border border-green-200 rounded-xl text-center">
+          <div className="text-2xl mb-1">✅</div>
+          <p className="text-sm font-semibold text-green-800">Algoritmo completado</p>
+          <p className="text-xs text-green-600 mt-1">Revisa las referencias abajo y consulta en comité CSUR si hay dudas.</p>
+        </div>
+      )}
 
       {/* Nav buttons */}
       <div className="flex gap-3 px-4">

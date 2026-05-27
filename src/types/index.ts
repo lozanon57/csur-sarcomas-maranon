@@ -105,6 +105,27 @@ export interface DatosPaciente {
   recidiva: boolean
 }
 
+// ─── Landmark / historical trial types ───────────────────────────────────────
+
+export type NivelEvidencia = 'Ia' | 'Ib' | 'IIa' | 'IIb' | 'III' | 'IV'
+export type TipoEstudio = 'RCT' | 'fase-II' | 'fase-III' | 'meta-analisis' | 'prospectivo' | 'retrospectivo' | 'basket'
+
+export interface EnsayoHistorico {
+  id: string
+  nombre: string           // Short name e.g. "SSGXVIII", "EORTC 62931"
+  año: number
+  publicacion: string      // Journal + year
+  doi?: string
+  histologias: string[]    // Sarcoma IDs (or 'all_sts', 'leiomiosarcoma', etc.)
+  pregunta_clinica: string // "¿3 años de imatinib adyuvante son superiores a 1 año?"
+  resultado_clave: string  // Primary endpoint result
+  impacto_practica: string // How it changed clinical practice
+  nivel_evidencia: NivelEvidencia
+  tipo_estudio: TipoEstudio
+  cita_completa: string
+  n_pacientes?: number
+}
+
 // ─── i18n ────────────────────────────────────────────────────────────────────
 
 export type Idioma = 'es' | 'en'
