@@ -1,0 +1,309 @@
+import React, { useState } from 'react'
+import { Search, Filter, X, ChevronDown, ChevronUp, AlertCircle, Microscope } from 'lucide-react'
+import { useAppI18n } from '../App'
+import { useSearch } from '../hooks/useSearch'
+import type { Sarcoma, Comportamiento, Estirpe, Poblacion } from '../types'
+
+// ─── Behaviour badge ──────────────────────────────────────────────────────────
+function BehaviourBadge({ c }: { c: Comportamiento }) {
+  const map: Record<Comportamiento, string> = {
+    maligno: 'tag-maligno', benigno: 'tag-benigno', intermedio: 'tag-intermedio'
+  }
+  const labels: Record<Comportamiento, string> = {
+    maligno: 'Maligno', benigno: 'Benigno', intermedio: 'Intermedio'
+  }
+  return <span className={map[c]}>{labels[c]}</span>
+}
+
+function EstirpeBadge({ e }: { e: Sarcoma['estirpe'] }) {
+  const map = { tejidos_blandos: 'tag-blandos', oseo: 'tag-oseo', gist: 'tag-gist', mixto: 'tag-blandos' }
+  const labels = { tejidos_blandos: 'T. Blandos', oseo: 'Óseo', gist: 'GIST', mixto: 'Mixto' }
+  return <span className={map[e]}>{labels[e]}</span>
+}
+
+// ─── Tumour card ─────────────────────────────────────────────────────────────
+function TumourCard({ s, onClick }: { s: Sarcoma; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="card w-full text-left p-4 hover:shadow-md transition-all active:scale-98 animate-fade-in">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+          <Microscope size={16} className="text-primary-700" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 text-sm leading-snug">{s.nombre}</p>
+          {s.nombre_alternativo && s.nombre_alternativo.length > 0 && (
+            <p className="text-xs text-gray-400 mt-0.5 truncate">{s.nombre_alternativo.join(' · ')}</p>
+          )}
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <BehaviourBadge c={s.comportamiento} />
+            <EstirpeBadge e={s.estirpe} />
+            {s.poblacion === 'pediatrico' && <span className="badge bg-orange-100 text-orange-800">Pediátrico</span>}
+          </div>
+          {/* Key molecular marker */}
+          {s.marcadores_moleculares.length > 0 && (
+            <p className="text-xs text-primary-600 mt-1.5 font-mono truncate">
+              {s.marcadores_moleculares[0].alteracion}
+            </p>
+          )}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+// ─── Detail section ───────────────────────────────────────────────────────────
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true)
+  return (
+    <div className="border-b border-gray-100 last:border-0">
+      <button onClick={() => setOpen(v => !v)} className="flex items-center justify-between w-full py-3 px-4 text-left">
+        <span className="text-sm font-semibold text-gray-800">{title}</span>
+        {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+      </button>
+      {open && <div className="px-4 pb-4 text-sm text-gray-700 space-y-1">{children}</div>}
+    </div>
+  )
+}
+
+// ─── Detail panel ─────────────────────────────────────────────────────────────
+function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (k: string) => string }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col bg-gray-50">
+      {/* Header */}
+      <div className="bg-primary-800 text-white pt-safe px-4 pb-3">
+        <div className="flex items-center gap-3 mt-3">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <X size={20} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-bold text-base leading-snug line-clamp-2">{s.nombre}</h2>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              <BehaviourBadge c={s.comportamiento} />
+              <EstirpeBadge e={s.estirpe} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto pb-6">
+        <div className="card mx-3 mt-3 divide-y divide-gray-100">
+          <Section title={t('buscador.epidemiologia')}>
+            <p className="leading-relaxed">{s.epidemiologia}</p>
+          </Section>
+          <Section title={t('buscador.histologia')}>
+            <p className="leading-relaxed">{s.histologia}</p>
+          </Section>
+          <Section title={t('buscador.ihq')}>
+            <div className="flex flex-wrap gap-1.5">
+              {s.ihq.map(m => (
+                <span key={m} className="badge bg-blue-50 text-blue-800 font-mono text-xs">{m}</span>
+              ))}
+            </div>
+          </Section>
+          <Section title={t('buscador.molecular')}>
+            <div className="space-y-3">
+              {s.marcadores_moleculares.map((m, i) => (
+                <div key={i} className="bg-purple-50 rounded-lg p-3">
+                  <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
+                  {m.frecuencia && <p className="text-xs text-purple-700 mt-0.5">Frecuencia: {m.frecuencia}</p>}
+                  {m.relevancia_terapeutica && (
+                    <p className="text-xs text-purple-800 mt-1 leading-snug">{m.relevancia_terapeutica}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section title={t('buscador.estadificacion')}>
+            <p className="leading-relaxed">{s.estadificacion}</p>
+          </Section>
+          <Section title={t('buscador.primera_linea')}>
+            <p className="leading-relaxed">{s.tratamiento_primera_linea}</p>
+          </Section>
+          {s.tratamiento_adyuvante && (
+            <Section title={t('buscador.adyuvante')}>
+              <p className="leading-relaxed">{s.tratamiento_adyuvante}</p>
+            </Section>
+          )}
+          {s.tratamiento_paliativo && (
+            <Section title={t('buscador.paliativo')}>
+              <p className="leading-relaxed">{s.tratamiento_paliativo}</p>
+            </Section>
+          )}
+          <Section title={t('buscador.seguimiento')}>
+            <p className="leading-relaxed">{s.seguimiento}</p>
+          </Section>
+          <Section title={t('buscador.pronostico')}>
+            <p className="leading-relaxed">{s.pronostico}</p>
+          </Section>
+          {s.perlas_clinicas.length > 0 && (
+            <Section title={t('buscador.perlas')}>
+              <div className="space-y-2">
+                {s.perlas_clinicas.map((p, i) => (
+                  <div key={i} className="flex gap-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+                    <span className="text-amber-500 flex-shrink-0 mt-0.5">★</span>
+                    <p className="text-xs leading-relaxed text-amber-900">{p}</p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Category chips for quick browsing ───────────────────────────────────────
+const QUICK_CATEGORIES = [
+  { label: 'Liposarcoma', query: 'liposarcoma' },
+  { label: 'Leiomiosarcoma', query: 'leiomiosarcoma' },
+  { label: 'GIST', query: 'GIST' },
+  { label: 'Ewing', query: 'ewing' },
+  { label: 'Osteosarcoma', query: 'osteosarcoma' },
+  { label: 'Desmoide', query: 'desmoide' },
+  { label: 'Condrosarcoma', query: 'condrosarcoma' },
+  { label: 'MDM2', query: 'MDM2' },
+  { label: 'NTRK', query: 'NTRK' },
+  { label: 'CDK4', query: 'CDK4' },
+]
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+export default function PageBuscador() {
+  const { t } = useAppI18n()
+  const { filters, results, updateFilter, resetFilters } = useSearch()
+  const [selected, setSelected] = useState<Sarcoma | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+
+  if (selected) {
+    return <TumourDetail s={selected} onClose={() => setSelected(null)} t={t} />
+  }
+
+  const hasActiveFilters = filters.comportamiento !== 'todos' || filters.estirpe !== 'todos' || filters.poblacion !== 'todos'
+
+  return (
+    <div className="p-4 space-y-4 animate-fade-in">
+      <h1 className="text-xl font-bold text-gray-900">{t('buscador.title')}</h1>
+
+      {/* Search bar */}
+      <div className="relative">
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          value={filters.query}
+          onChange={e => updateFilter('query', e.target.value)}
+          placeholder={t('buscador.placeholder')}
+          className="input-field pl-9 pr-10"
+        />
+        {filters.query && (
+          <button onClick={() => updateFilter('query', '')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* Quick categories */}
+      {filters.query === '' && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          {QUICK_CATEGORIES.map(c => (
+            <button
+              key={c.query}
+              onClick={() => updateFilter('query', c.query)}
+              className="flex-shrink-0 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-xs font-medium hover:bg-primary-100 transition-colors"
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Filter toggle */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowFilters(v => !v)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors
+            ${hasActiveFilters ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600'}`}
+        >
+          <Filter size={15} />
+          {t('buscador.filtros')}
+          {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-primary-600" />}
+        </button>
+        <span className="text-sm text-gray-500">
+          <b className="text-gray-900">{results.length}</b> {t('buscador.resultados')}
+        </span>
+      </div>
+
+      {/* Filters panel */}
+      {showFilters && (
+        <div className="card p-4 space-y-3 animate-slide-up">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">{t('buscador.filtros')}</p>
+            <button onClick={() => { resetFilters(); setShowFilters(false) }} className="text-xs text-primary-600">
+              {t('common.limpiar')}
+            </button>
+          </div>
+          {/* Comportamiento */}
+          <div>
+            <p className="text-xs text-gray-500 mb-1.5">Comportamiento</p>
+            <div className="flex flex-wrap gap-2">
+              {(['todos', 'maligno', 'intermedio', 'benigno'] as const).map(v => (
+                <button key={v}
+                  onClick={() => updateFilter('comportamiento', v)}
+                  className={`px-3 py-1 rounded-full text-xs transition-colors
+                    ${filters.comportamiento === v ? 'bg-primary-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                >
+                  {t(`buscador.${v}`) || v}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Estirpe */}
+          <div>
+            <p className="text-xs text-gray-500 mb-1.5">Estirpe</p>
+            <div className="flex flex-wrap gap-2">
+              {(['todos', 'tejidos_blandos', 'oseo', 'gist'] as const).map(v => (
+                <button key={v}
+                  onClick={() => updateFilter('estirpe', v)}
+                  className={`px-3 py-1 rounded-full text-xs transition-colors
+                    ${filters.estirpe === v ? 'bg-primary-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                >
+                  {t(`buscador.${v}`) || v}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Poblacion */}
+          <div>
+            <p className="text-xs text-gray-500 mb-1.5">Población</p>
+            <div className="flex flex-wrap gap-2">
+              {(['todos', 'adulto', 'pediatrico'] as const).map(v => (
+                <button key={v}
+                  onClick={() => updateFilter('poblacion', v)}
+                  className={`px-3 py-1 rounded-full text-xs transition-colors
+                    ${filters.poblacion === v ? 'bg-primary-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                >
+                  {t(`buscador.${v}`) || v}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {results.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <AlertCircle size={32} className="text-gray-300 mb-3" />
+          <p className="text-gray-500 text-sm">{t('buscador.sin_resultados')}</p>
+          <button onClick={resetFilters} className="mt-3 text-primary-600 text-sm underline">{t('common.limpiar')}</button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {results.map(s => (
+            <TumourCard key={s.id} s={s} onClick={() => setSelected(s)} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
