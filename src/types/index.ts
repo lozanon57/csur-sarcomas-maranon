@@ -43,9 +43,10 @@ export interface AlgoritmoNodo {
   tipo: 'inicio' | 'decision' | 'accion' | 'resultado' | 'derivacion'
   texto: string
   detalle?: string
-  si?: string
-  no?: string
+  si?: string          // ID del nodo si la respuesta es Sí
+  no?: string          // ID del nodo si la respuesta es No
   opciones?: { texto: string; siguiente: string }[]
+  siguiente?: string   // ID del nodo siguiente para nodos sin bifurcación (inicio, accion, resultado)
   referencia?: string
 }
 

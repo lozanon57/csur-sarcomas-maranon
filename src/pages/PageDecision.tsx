@@ -87,9 +87,7 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
   const [history, setHistory] = useState<string[]>([])
   const [showRefs, setShowRefs] = useState(false)
 
-  const currentIndex = algo.nodos.findIndex(n => n.id === currentId)
-  const currentNode = algo.nodos[currentIndex]
-  const nextSequentialNode = algo.nodos[currentIndex + 1]
+  const currentNode = algo.nodos.find(n => n.id === currentId)
 
   const navigate = (nextId: string) => {
     setHistory(prev => [...prev, currentId])
@@ -111,9 +109,9 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
 
   if (!currentNode) return null
 
-  const hasNavigation = !!(currentNode.si || currentNode.no || currentNode.opciones)
-  const isEnd = !hasNavigation && !nextSequentialNode
-  const canContinue = !hasNavigation && !!nextSequentialNode
+  const hasNavigation = !!(currentNode?.si || currentNode?.no || currentNode?.opciones)
+  const isEnd = !hasNavigation && !currentNode?.siguiente
+  const canContinue = !hasNavigation && !!currentNode?.siguiente
   const isFirst = history.length === 0
 
   return (
@@ -148,7 +146,7 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
           onSi={currentNode.si ? () => navigate(currentNode.si!) : undefined}
           onNo={currentNode.no ? () => navigate(currentNode.no!) : undefined}
           onOpcion={next => navigate(next)}
-          onContinuar={canContinue ? () => navigate(nextSequentialNode!.id) : undefined}
+          onContinuar={canContinue ? () => navigate(currentNode!.siguiente!) : undefined}
         />
       </div>
 
