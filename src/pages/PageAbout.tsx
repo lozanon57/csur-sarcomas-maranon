@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Mail, ExternalLink, Shield, Users, AlertTriangle, User, GraduationCap,
-         Building2, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
+         Building2, ChevronDown, ChevronUp, BookOpen, CheckCircle2, ShieldCheck,
+         ClipboardList, History } from 'lucide-react'
 import { useAppI18n } from '../App'
 
 // ─── Collapsible section ──────────────────────────────────────────────────────
@@ -123,6 +124,95 @@ export default function PageAbout() {
             <span className="text-xs text-gray-600">drlozanolominchar.com</span>
           </a>
         </div>
+      </Section>
+
+      {/* ── METODOLOGÍA Y VALIDACIÓN ── */}
+      <Section title="Metodología y Validación de Contenidos" icon={<ShieldCheck size={16} className="text-green-600" />}>
+
+        {/* Expert review badge */}
+        <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-xl mb-4">
+          <CheckCircle2 size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-green-900">Contenido revisado y validado por experto clínico</p>
+            <p className="text-xs text-green-700 mt-0.5 leading-relaxed">
+              Todo el contenido ha sido curado, redactado y validado por
+              <strong> Dr. Pablo Lozano Lominchar</strong> — Cirujano Oncológico,
+              MSKCC Fellow 2024-25, CSUR Sarcomas HGUGM. Revisión completada Mayo 2026.
+            </p>
+          </div>
+        </div>
+
+        {/* Fuentes primarias */}
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">
+          <ClipboardList size={12} className="inline mr-1" />Fuentes primarias utilizadas
+        </p>
+        <div className="space-y-2 mb-4">
+          {[
+            { label: 'NCCN Clinical Practice Guidelines in Oncology', ver: 'v1.2025 — Soft Tissue Sarcoma · Bone Cancer · GIST', color: 'border-blue-200 bg-blue-50 text-blue-800' },
+            { label: 'ESMO Clinical Practice Guidelines', ver: '2025 — Soft Tissue and Visceral Sarcomas', color: 'border-purple-200 bg-purple-50 text-purple-800' },
+            { label: 'WHO Classification of Tumours', ver: '5ª ed. — Soft Tissue and Bone Tumours 2020', color: 'border-indigo-200 bg-indigo-50 text-indigo-800' },
+            { label: 'AJCC Cancer Staging Manual', ver: '8ª edición — Sarcoma staging systems', color: 'border-gray-200 bg-gray-50 text-gray-700' },
+            { label: 'GEIS — Grupo Español de Investigación en Sarcomas', ver: 'Guías clínicas y consensos 2023–2025', color: 'border-red-200 bg-red-50 text-red-800' },
+            { label: 'Literatura científica indexada', ver: 'PubMed · Annals of Surgical Oncology · Lancet Oncology · JCO', color: 'border-teal-200 bg-teal-50 text-teal-800' },
+          ].map(src => (
+            <div key={src.label} className={`flex gap-2.5 p-2.5 rounded-lg border ${src.color}`}>
+              <CheckCircle2 size={13} className="flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold leading-snug">{src.label}</p>
+                <p className="text-xs mt-0.5 opacity-80 leading-snug">{src.ver}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Proceso de curación */}
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Proceso de curación y revisión</p>
+        <div className="space-y-2 mb-4 text-xs text-gray-700 leading-relaxed">
+          {[
+            'Cada entidad nosológica y algoritmo clínico ha sido extraído directamente de las guías primarias citadas, sin intermediarios ni resúmenes de terceros.',
+            'Los criterios diagnósticos, estadificación y recomendaciones de tratamiento siguen estrictamente la versión más reciente de NCCN 2025 y ESMO 2025.',
+            'Los ensayos históricos (Landmark Trials) se han seleccionado por su impacto demostrado en la práctica clínica y se presentan con nivel de evidencia explícito.',
+            'El contenido ha sido revisado clínicamente por el autor, que cuenta con formación específica en sarcomas a nivel internacional (MSKCC) y es miembro activo del comité CSUR.',
+            'La app no genera recomendaciones clínicas mediante inteligencia artificial. Todo el contenido es de elaboración humana.',
+          ].map((item, i) => (
+            <div key={i} className="flex gap-2">
+              <span className="text-gray-400 flex-shrink-0">·</span>
+              <p>{item}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Sin IA generativa */}
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4">
+          <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+            <AlertTriangle size={13} className="text-amber-600" />
+            Declaración sobre IA
+          </p>
+          <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+            Esta aplicación es una herramienta de consulta. <strong>No utiliza IA generativa para producir
+            recomendaciones clínicas</strong>. Los algoritmos de decisión son árboles deterministas
+            diseñados manualmente conforme a las guías. La app no aprende ni modifica su contenido
+            de forma autónoma.
+          </p>
+        </div>
+
+        {/* Control de versiones */}
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <History size={12} className="inline mr-1" />Control de versiones
+        </p>
+        <div className="space-y-1.5 text-xs">
+          {[
+            { ver: 'v1.1.0', fecha: 'Mayo 2026', desc: 'Versión actual — 30+ entidades, 6 algoritmos, 24 ensayos históricos, buscador avanzado.' },
+            { ver: 'v1.0.0', fecha: 'Marzo 2026', desc: 'Versión inicial — lanzamiento para el CSUR HGUGM.' },
+          ].map(v => (
+            <div key={v.ver} className="flex gap-3 py-1.5 border-b border-gray-50 last:border-0">
+              <span className="font-mono font-semibold text-primary-700 w-12 flex-shrink-0">{v.ver}</span>
+              <span className="text-gray-400 w-20 flex-shrink-0">{v.fecha}</span>
+              <span className="text-gray-600 flex-1">{v.desc}</span>
+            </div>
+          ))}
+        </div>
+
       </Section>
 
       {/* ── COMITÉ MDT ── */}

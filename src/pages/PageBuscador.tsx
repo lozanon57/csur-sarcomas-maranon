@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Search, Filter, X, ChevronDown, ChevronUp, AlertCircle, Microscope, FlaskConical, BookOpen, Lightbulb, Award } from 'lucide-react'
+import { Search, Filter, X, ChevronDown, ChevronUp, AlertCircle, Microscope, FlaskConical, BookOpen, Lightbulb, Award, ShieldCheck } from 'lucide-react'
 import { useAppI18n } from '../App'
 import { useSearch } from '../hooks/useSearch'
 import type { Sarcoma, Comportamiento, EnsayoHistorico } from '../types'
@@ -117,6 +117,22 @@ function LandmarkTrialCard({ trial }: { trial: EnsayoHistorico }) {
   )
 }
 
+// ─── Source footer ────────────────────────────────────────────────────────────
+function SourceFooter() {
+  return (
+    <div className="mx-3 mt-3 mb-1 flex items-start gap-2 p-3 bg-green-50 border border-green-100 rounded-xl">
+      <ShieldCheck size={13} className="text-green-600 flex-shrink-0 mt-0.5" />
+      <div>
+        <p className="text-xs font-semibold text-green-800">Contenido validado por experto clínico</p>
+        <p className="text-xs text-green-700 mt-0.5 leading-relaxed">
+          Basado en: <span className="font-medium">NCCN v1.2025 · ESMO 2025 · WHO 5ª ed. 2020 · AJCC 8ª ed.</span>
+          <br />Revisado por Dr. Pablo Lozano Lominchar — MSKCC Fellow · CSUR Sarcomas HGUGM
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── Detail section ───────────────────────────────────────────────────────────
 function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(true)
@@ -162,6 +178,9 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
               <BehaviourBadge c={s.comportamiento} />
               <EstirpeBadge e={s.estirpe} />
               {s.poblacion === 'pediatrico' && <span className="badge bg-orange-400/30 text-orange-100 text-xs">Pediátrico</span>}
+              <span className="flex items-center gap-1 badge bg-green-400/20 text-green-200 text-xs">
+                <ShieldCheck size={10} />Revisado · NCCN/ESMO 2025
+              </span>
             </div>
           </div>
         </div>
@@ -189,77 +208,83 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
 
         {/* ── TAB: OVERVIEW (Biology) ── */}
         {tab === 'overview' && (
-          <div className="card mx-3 mt-3 divide-y divide-gray-100">
-            <Section title={t('buscador.epidemiologia')} icon={<span className="text-base">📊</span>}>
-              <p className="leading-relaxed">{s.epidemiologia}</p>
-            </Section>
-            <Section title={t('buscador.histologia')} icon={<span className="text-base">🔬</span>}>
-              <p className="leading-relaxed">{s.histologia}</p>
-            </Section>
-            <Section title={t('buscador.ihq')} icon={<span className="text-base">🧫</span>}>
-              <div className="flex flex-wrap gap-1.5">
-                {s.ihq.map(m => (
-                  <span key={m} className="badge bg-blue-50 text-blue-800 font-mono text-xs">{m}</span>
-                ))}
-              </div>
-            </Section>
-            <Section title={t('buscador.molecular')} icon={<span className="text-base">🧬</span>}>
-              <div className="space-y-3">
-                {s.marcadores_moleculares.map((m, i) => (
-                  <div key={i} className="bg-purple-50 rounded-lg p-3">
-                    <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
-                    {m.frecuencia && <p className="text-xs text-purple-700 mt-0.5">Frecuencia: {m.frecuencia}</p>}
-                    {m.relevancia_terapeutica && (
-                      <p className="text-xs text-purple-800 mt-1 leading-snug">{m.relevancia_terapeutica}</p>
-                    )}
-                  </div>
-                ))}
-                {s.marcadores_moleculares.length === 0 && (
-                  <p className="text-xs text-gray-400 italic">Sin alteraciones moleculares características conocidas.</p>
-                )}
-              </div>
-            </Section>
-            <Section title={t('buscador.estadificacion')} icon={<span className="text-base">📋</span>}>
-              <p className="leading-relaxed">{s.estadificacion}</p>
-            </Section>
-            <Section title={t('buscador.pronostico')} icon={<span className="text-base">📈</span>}>
-              <p className="leading-relaxed">{s.pronostico}</p>
-            </Section>
-            {s.perlas_clinicas.length > 0 && (
-              <Section title={t('buscador.perlas')} icon={<span className="text-base">⭐</span>}>
-                <div className="space-y-2">
-                  {s.perlas_clinicas.map((p, i) => (
-                    <div key={i} className="flex gap-2 p-2.5 bg-amber-50 rounded-lg border border-amber-100">
-                      <Lightbulb size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs leading-relaxed text-amber-900">{p}</p>
-                    </div>
+          <>
+            <div className="card mx-3 mt-3 divide-y divide-gray-100">
+              <Section title={t('buscador.epidemiologia')} icon={<span className="text-base">📊</span>}>
+                <p className="leading-relaxed">{s.epidemiologia}</p>
+              </Section>
+              <Section title={t('buscador.histologia')} icon={<span className="text-base">🔬</span>}>
+                <p className="leading-relaxed">{s.histologia}</p>
+              </Section>
+              <Section title={t('buscador.ihq')} icon={<span className="text-base">🧫</span>}>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.ihq.map(m => (
+                    <span key={m} className="badge bg-blue-50 text-blue-800 font-mono text-xs">{m}</span>
                   ))}
                 </div>
               </Section>
-            )}
-          </div>
+              <Section title={t('buscador.molecular')} icon={<span className="text-base">🧬</span>}>
+                <div className="space-y-3">
+                  {s.marcadores_moleculares.map((m, i) => (
+                    <div key={i} className="bg-purple-50 rounded-lg p-3">
+                      <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
+                      {m.frecuencia && <p className="text-xs text-purple-700 mt-0.5">Frecuencia: {m.frecuencia}</p>}
+                      {m.relevancia_terapeutica && (
+                        <p className="text-xs text-purple-800 mt-1 leading-snug">{m.relevancia_terapeutica}</p>
+                      )}
+                    </div>
+                  ))}
+                  {s.marcadores_moleculares.length === 0 && (
+                    <p className="text-xs text-gray-400 italic">Sin alteraciones moleculares características conocidas.</p>
+                  )}
+                </div>
+              </Section>
+              <Section title={t('buscador.estadificacion')} icon={<span className="text-base">📋</span>}>
+                <p className="leading-relaxed">{s.estadificacion}</p>
+              </Section>
+              <Section title={t('buscador.pronostico')} icon={<span className="text-base">📈</span>}>
+                <p className="leading-relaxed">{s.pronostico}</p>
+              </Section>
+              {s.perlas_clinicas.length > 0 && (
+                <Section title={t('buscador.perlas')} icon={<span className="text-base">⭐</span>}>
+                  <div className="space-y-2">
+                    {s.perlas_clinicas.map((p, i) => (
+                      <div key={i} className="flex gap-2 p-2.5 bg-amber-50 rounded-lg border border-amber-100">
+                        <Lightbulb size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs leading-relaxed text-amber-900">{p}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+            </div>
+            <SourceFooter />
+          </>
         )}
 
         {/* ── TAB: TREATMENT ── */}
         {tab === 'treatment' && (
-          <div className="card mx-3 mt-3 divide-y divide-gray-100">
-            <Section title={t('buscador.primera_linea')} icon={<span className="text-base">💊</span>}>
-              <p className="leading-relaxed">{s.tratamiento_primera_linea}</p>
-            </Section>
-            {s.tratamiento_adyuvante && (
-              <Section title={t('buscador.adyuvante')} icon={<span className="text-base">🔄</span>}>
-                <p className="leading-relaxed">{s.tratamiento_adyuvante}</p>
+          <>
+            <div className="card mx-3 mt-3 divide-y divide-gray-100">
+              <Section title={t('buscador.primera_linea')} icon={<span className="text-base">💊</span>}>
+                <p className="leading-relaxed">{s.tratamiento_primera_linea}</p>
               </Section>
-            )}
-            {s.tratamiento_paliativo && (
-              <Section title={t('buscador.paliativo')} icon={<span className="text-base">🏥</span>}>
-                <p className="leading-relaxed">{s.tratamiento_paliativo}</p>
+              {s.tratamiento_adyuvante && (
+                <Section title={t('buscador.adyuvante')} icon={<span className="text-base">🔄</span>}>
+                  <p className="leading-relaxed">{s.tratamiento_adyuvante}</p>
+                </Section>
+              )}
+              {s.tratamiento_paliativo && (
+                <Section title={t('buscador.paliativo')} icon={<span className="text-base">🏥</span>}>
+                  <p className="leading-relaxed">{s.tratamiento_paliativo}</p>
+                </Section>
+              )}
+              <Section title={t('buscador.seguimiento')} icon={<span className="text-base">📅</span>}>
+                <p className="leading-relaxed">{s.seguimiento}</p>
               </Section>
-            )}
-            <Section title={t('buscador.seguimiento')} icon={<span className="text-base">📅</span>}>
-              <p className="leading-relaxed">{s.seguimiento}</p>
-            </Section>
-          </div>
+            </div>
+            <SourceFooter />
+          </>
         )}
 
         {/* ── TAB: EVIDENCE (Landmark trials) ── */}
