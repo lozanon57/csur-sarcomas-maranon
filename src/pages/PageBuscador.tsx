@@ -151,18 +151,19 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
 }
 
 // ─── Tab navigation for detail panel ─────────────────────────────────────────
-type DetailTab = 'overview' | 'treatment' | 'evidence'
+type DetailTab = 'resumen' | 'patologia' | 'tratamiento' | 'evidencia'
 
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (k: string) => string }) {
-  const [tab, setTab] = useState<DetailTab>('overview')
+  const [detailTab, setDetailTab] = useState<DetailTab>('resumen')
   const landmarkTrials = getEnsayosHistoricosForSarcoma(s.id)
 
-  const tabs: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview',   label: 'Biología',     icon: <Microscope size={13} /> },
-    { id: 'treatment',  label: 'Tratamiento',  icon: <FlaskConical size={13} /> },
-    { id: 'evidence',   label: `Evidencia${landmarkTrials.length > 0 ? ` (${landmarkTrials.length})` : ''}`, icon: <BookOpen size={13} /> },
-  ]
+  const tabLabels: Record<DetailTab, string> = {
+    resumen: 'Resumen',
+    patologia: 'Patología',
+    tratamiento: 'Tratamiento',
+    evidencia: `Evidencia${landmarkTrials.length > 0 ? ` (${landmarkTrials.length})` : ''}`,
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-gray-50">
@@ -187,17 +188,16 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
 
         {/* Tab bar */}
         <div className="flex gap-0 border-t border-white/20">
-          {tabs.map(tb => (
+          {(Object.keys(tabLabels) as DetailTab[]).map(tab => (
             <button
-              key={tb.id}
-              onClick={() => setTab(tb.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors border-b-2
-                ${tab === tb.id
+              key={tab}
+              onClick={() => setDetailTab(tab)}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2 truncate
+                ${detailTab === tab
                   ? 'border-white text-white'
                   : 'border-transparent text-blue-300 hover:text-blue-100'}`}
             >
-              {tb.icon}
-              {tb.label}
+              {tabLabels[tab]}
             </button>
           ))}
         </div>
@@ -206,42 +206,33 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
       {/* Content */}
       <div className="flex-1 overflow-y-auto pb-6">
 
-        {/* ── TAB: OVERVIEW (Biology) ── */}
-        {tab === 'overview' && (
+        {/* ── TAB: RESUMEN ── */}
+        {detailTab === 'resumen' && (
           <>
             <div className="card mx-3 mt-3 divide-y divide-gray-100">
               <Section title={t('buscador.epidemiologia')} icon={<span className="text-base">📊</span>}>
                 <p className="leading-relaxed">{s.epidemiologia}</p>
               </Section>
-              <Section title={t('buscador.histologia')} icon={<span className="text-base">🔬</span>}>
-                <p className="leading-relaxed">{s.histologia}</p>
-              </Section>
-              <Section title={t('buscador.ihq')} icon={<span className="text-base">🧫</span>}>
+              {s.descripcion && (
+                <Section title="Descripción" icon={<span className="text-base">📝</span>}>
+                  <p className="leading-relaxed">{s.descripcion}</p>
+                </Section>
+              )}
+              <Section title="Comportamiento y estirpe" icon={<span className="text-base">🏷️</span>}>
                 <div className="flex flex-wrap gap-1.5">
-                  {s.ihq.map(m => (
-                    <span key={m} className="badge bg-blue-50 text-blue-800 font-mono text-xs">{m}</span>
-                  ))}
+                  <BehaviourBadge c={s.comportamiento} />
+                  <EstirpeBadge e={s.estirpe} />
                 </div>
               </Section>
-              <Section title={t('buscador.molecular')} icon={<span className="text-base">🧬</span>}>
-                <div className="space-y-3">
-                  {s.marcadores_moleculares.map((m, i) => (
-                    <div key={i} className="bg-purple-50 rounded-lg p-3">
-                      <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
-                      {m.frecuencia && <p className="text-xs text-purple-700 mt-0.5">Frecuencia: {m.frecuencia}</p>}
-                      {m.relevancia_terapeutica && (
-                        <p className="text-xs text-purple-800 mt-1 leading-snug">{m.relevancia_terapeutica}</p>
-                      )}
-                    </div>
-                  ))}
-                  {s.marcadores_moleculares.length === 0 && (
-                    <p className="text-xs text-gray-400 italic">Sin alteraciones moleculares características conocidas.</p>
-                  )}
-                </div>
-              </Section>
-              <Section title={t('buscador.estadificacion')} icon={<span className="text-base">📋</span>}>
-                <p className="leading-relaxed">{s.estadificacion}</p>
-              </Section>
+              {s.localizaciones && s.localizaciones.length > 0 && (
+                <Section title="Localizaciones" icon={<span className="text-base">📍</span>}>
+                  <div className="flex flex-wrap gap-1.5">
+                    {s.localizaciones.map((loc, i) => (
+                      <span key={i} className="badge bg-gray-100 text-gray-700">{loc}</span>
+                    ))}
+                  </div>
+                </Section>
+              )}
               <Section title={t('buscador.pronostico')} icon={<span className="text-base">📈</span>}>
                 <p className="leading-relaxed">{s.pronostico}</p>
               </Section>
@@ -262,8 +253,50 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
           </>
         )}
 
-        {/* ── TAB: TREATMENT ── */}
-        {tab === 'treatment' && (
+        {/* ── TAB: PATOLOGÍA ── */}
+        {detailTab === 'patologia' && (
+          <>
+            <div className="card mx-3 mt-3 divide-y divide-gray-100">
+              <Section title={t('buscador.histologia')} icon={<span className="text-base">🔬</span>}>
+                <p className="leading-relaxed">{s.histologia}</p>
+              </Section>
+              <Section title={t('buscador.ihq')} icon={<span className="text-base">🧫</span>}>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.ihq.map(m => (
+                    <span key={m} className="badge bg-green-50 text-green-800 font-mono text-xs border border-green-200">{m}</span>
+                  ))}
+                  {s.ihq.length === 0 && (
+                    <p className="text-xs text-gray-400 italic">Sin marcadores IHQ específicos registrados.</p>
+                  )}
+                </div>
+              </Section>
+              <Section title={t('buscador.molecular')} icon={<span className="text-base">🧬</span>}>
+                <div className="space-y-3">
+                  {s.marcadores_moleculares.map((m, i) => (
+                    <div key={i} className="bg-purple-50 rounded-xl p-3 border border-purple-100">
+                      <p className="font-mono font-semibold text-purple-900 text-xs">{m.alteracion}</p>
+                      {m.frecuencia && (
+                        <span className="mt-1 inline-block badge bg-purple-200 text-purple-800 text-xs">
+                          {m.frecuencia}
+                        </span>
+                      )}
+                      {m.relevancia_terapeutica && (
+                        <p className="text-xs text-gray-600 mt-1.5 leading-snug">{m.relevancia_terapeutica}</p>
+                      )}
+                    </div>
+                  ))}
+                  {s.marcadores_moleculares.length === 0 && (
+                    <p className="text-xs text-gray-400 italic">Sin alteraciones moleculares características conocidas.</p>
+                  )}
+                </div>
+              </Section>
+            </div>
+            <SourceFooter />
+          </>
+        )}
+
+        {/* ── TAB: TRATAMIENTO ── */}
+        {detailTab === 'tratamiento' && (
           <>
             <div className="card mx-3 mt-3 divide-y divide-gray-100">
               <Section title={t('buscador.primera_linea')} icon={<span className="text-base">💊</span>}>
@@ -287,48 +320,55 @@ function TumourDetail({ s, onClose, t }: { s: Sarcoma; onClose: () => void; t: (
           </>
         )}
 
-        {/* ── TAB: EVIDENCE (Landmark trials) ── */}
-        {tab === 'evidence' && (
-          <div className="mx-3 mt-3 space-y-3">
-            <div className="flex items-center gap-2 px-1">
-              <BookOpen size={15} className="text-indigo-600" />
-              <p className="text-xs font-semibold text-gray-600">Ensayos que cambiaron la práctica clínica</p>
+        {/* ── TAB: EVIDENCIA (Landmark trials) ── */}
+        {detailTab === 'evidencia' && (
+          <>
+            <div className="card mx-3 mt-3 divide-y divide-gray-100">
+              <Section title={t('buscador.estadificacion')} icon={<span className="text-base">📋</span>}>
+                <p className="leading-relaxed">{s.estadificacion}</p>
+              </Section>
             </div>
-            {landmarkTrials.length === 0 ? (
-              <div className="card p-6 text-center">
-                <p className="text-2xl mb-2">📚</p>
-                <p className="text-sm text-gray-500">No hay ensayos históricos específicos registrados para este subtipo.</p>
-                <p className="text-xs text-gray-400 mt-1">Consulta las secciones de STS generales para evidencia aplicable.</p>
+            <div className="mx-3 mt-3 space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <BookOpen size={15} className="text-indigo-600" />
+                <p className="text-xs font-semibold text-gray-600">Ensayos que cambiaron la práctica clínica</p>
               </div>
-            ) : (
-              <>
-                {/* Universal STS trials */}
-                {(() => {
-                  const universal = landmarkTrials.filter(e => e.histologias.includes('all_sts'))
-                  const specific  = landmarkTrials.filter(e => !e.histologias.includes('all_sts'))
-                  return (
-                    <>
-                      {specific.length > 0 && (
-                        <>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 px-1">Específicos de este subtipo</p>
-                          {specific.map(trial => <LandmarkTrialCard key={trial.id} trial={trial} />)}
-                        </>
-                      )}
-                      {universal.length > 0 && (
-                        <>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 px-1 mt-4">Aplicables a STS en general</p>
-                          {universal.map(trial => <LandmarkTrialCard key={trial.id} trial={trial} />)}
-                        </>
-                      )}
-                    </>
-                  )
-                })()}
-                <p className="text-xs text-gray-400 text-center pt-2">
-                  Ordenados cronológicamente · Fuentes: PubMed, NCCN 2025, ESMO 2025
-                </p>
-              </>
-            )}
-          </div>
+              {landmarkTrials.length === 0 ? (
+                <div className="card p-6 text-center">
+                  <p className="text-2xl mb-2">📚</p>
+                  <p className="text-sm text-gray-500">No hay ensayos históricos específicos registrados para este subtipo.</p>
+                  <p className="text-xs text-gray-400 mt-1">Consulta las secciones de STS generales para evidencia aplicable.</p>
+                </div>
+              ) : (
+                <>
+                  {(() => {
+                    const universal = landmarkTrials.filter(e => e.histologias.includes('all_sts'))
+                    const specific  = landmarkTrials.filter(e => !e.histologias.includes('all_sts'))
+                    return (
+                      <>
+                        {specific.length > 0 && (
+                          <>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 px-1">Específicos de este subtipo</p>
+                            {specific.map(trial => <LandmarkTrialCard key={trial.id} trial={trial} />)}
+                          </>
+                        )}
+                        {universal.length > 0 && (
+                          <>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 px-1 mt-4">Aplicables a STS en general</p>
+                            {universal.map(trial => <LandmarkTrialCard key={trial.id} trial={trial} />)}
+                          </>
+                        )}
+                      </>
+                    )
+                  })()}
+                  <p className="text-xs text-gray-400 text-center pt-2">
+                    Ordenados cronológicamente · Fuentes: PubMed, NCCN 2025, ESMO 2025
+                  </p>
+                </>
+              )}
+            </div>
+            <SourceFooter />
+          </>
         )}
       </div>
     </div>

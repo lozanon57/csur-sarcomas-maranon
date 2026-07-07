@@ -319,11 +319,13 @@ export default function PageTrials() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showChecker, setShowChecker] = useState(false)
   const [filterEspana, setFilterEspana] = useState(false)
+  const [soloConBiomarcador, setSoloConBiomarcador] = useState(false)
 
   const filtered = useMemo(() => {
-    if (!filterEspana) return ENSAYOS
-    return ENSAYOS.filter(e => e.espana)
-  }, [filterEspana])
+    return ENSAYOS
+      .filter(e => !filterEspana || e.espana)
+      .filter(e => !soloConBiomarcador || !!e.biomarcador_requerido)
+  }, [filterEspana, soloConBiomarcador])
 
   if (showChecker) return <ElegibilidadChecker onClose={() => setShowChecker(false)} />
 
@@ -350,8 +352,8 @@ export default function PageTrials() {
         </div>
       </button>
 
-      {/* Filter */}
-      <div className="flex items-center gap-3">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setFilterEspana(v => !v)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
@@ -359,6 +361,14 @@ export default function PageTrials() {
         >
           <MapPin size={12} />
           Solo disponibles en España
+        </button>
+        <button
+          onClick={() => setSoloConBiomarcador(v => !v)}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+            soloConBiomarcador ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-200'
+          }`}
+        >
+          <span>🧬</span> Solo con biomarcador
         </button>
         <span className="text-sm text-gray-500 ml-auto"><b>{filtered.length}</b> ensayos</span>
       </div>

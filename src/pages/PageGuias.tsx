@@ -19,22 +19,33 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
 
 function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="overflow-x-auto -mx-4 px-4">
-      <table className="w-full text-xs border-collapse min-w-max">
-        <thead>
-          <tr className="bg-primary-50">
-            {headers.map(h => <th key={h} className="px-3 py-2 text-left font-semibold text-primary-800 border border-gray-200">{h}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              {row.map((cell, j) => <td key={j} className="px-3 py-2 border border-gray-200 leading-snug">{cell}</td>)}
+    <>
+      <div className="overflow-x-auto -mx-4 px-4 no-scrollbar">
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr>
+              {headers.map(h => (
+                <th key={h} className="p-2 text-left border-b border-gray-100 font-semibold text-gray-700 bg-gray-50 whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                {row.map((cell, j) => (
+                  <td key={j} className="p-2 border-b border-gray-50 text-gray-600 align-top">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[10px] text-gray-400 text-right mt-1">← scroll →</p>
+    </>
   )
 }
 

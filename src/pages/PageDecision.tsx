@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { GitBranch, ChevronRight, RotateCcw, BookOpen, ArrowLeft } from 'lucide-react'
+import { GitBranch, ChevronRight, RotateCcw, BookOpen, ArrowLeft, Search } from 'lucide-react'
 import { useAppI18n } from '../App'
 import { ALGORITMOS } from '../data/algoritmos'
 import type { Algoritmo, AlgoritmoNodo } from '../types'
@@ -113,6 +113,8 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
   const isEnd = !hasNavigation && !currentNode?.siguiente
   const canContinue = !hasNavigation && !!currentNode?.siguiente
   const isFirst = history.length === 0
+  const totalNodes = algo.nodos.length
+  const stepNum = history.length + 1
 
   return (
     <div className="space-y-4">
@@ -126,10 +128,43 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
         </div>
         <p className="text-xs text-blue-300 ml-7">{algo.subtitulo}</p>
         <div className="ml-7 mt-2 flex items-center gap-2 text-xs text-blue-200">
-          <span>Paso {history.length + 1}</span>
           {isEnd && <span className="px-2 py-0.5 bg-green-400/20 text-green-300 rounded-full">Fin del algoritmo</span>}
         </div>
+
+        {/* Progress header */}
+        <div className="mt-3 space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-blue-100 truncate max-w-[200px]">{algo.titulo}</span>
+            <span className="text-xs text-blue-300 whitespace-nowrap">Paso {stepNum} / {totalNodes}</span>
+          </div>
+          <div className="w-full bg-white/20 rounded-full h-1">
+            <div
+              className="bg-white h-1 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min((stepNum / totalNodes) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Breadcrumb */}
+      {history.length > 0 && (
+        <div className="overflow-x-auto no-scrollbar px-4">
+          <div className="flex items-center gap-1 text-xs text-gray-400 flex-nowrap pb-1">
+            {history.slice(-4).map((hId) => {
+              const node = algo.nodos.find(n => n.id === hId)
+              return (
+                <React.Fragment key={hId}>
+                  <span className="bg-gray-100 rounded px-1.5 py-0.5 whitespace-nowrap max-w-[90px] truncate inline-block">
+                    {node?.texto?.slice(0, 25) ?? hId}
+                  </span>
+                  <ChevronRight size={10} className="flex-shrink-0" />
+                </React.Fragment>
+              )
+            })}
+            <span className="text-primary-600 font-medium whitespace-nowrap">Aquí</span>
+          </div>
+        </div>
+      )}
 
       {/* Progress dots */}
       <div className="flex gap-1.5 px-4">
@@ -194,6 +229,7 @@ function AlgorithmRunner({ algo, onBack }: { algo: Algoritmo; onBack: () => void
 export default function PageDecision() {
   const { t } = useAppI18n()
   const [selected, setSelected] = useState<Algoritmo | null>(null)
+  const [search, setSearch] = useState('')
 
   const categories = [
     { id: 'diagnostico',    label: t('decision.diagnostico'),    color: 'bg-primary-50 border-primary-200 text-primary-700' },
@@ -201,6 +237,13 @@ export default function PageDecision() {
     { id: 'estadificacion', label: t('decision.estadificacion'), color: 'bg-purple-50 border-purple-200 text-purple-700' },
     { id: 'seguimiento',    label: t('decision.seguimiento'),    color: 'bg-amber-50 border-amber-200 text-amber-700' },
   ]
+
+  const filtered = ALGORITMOS.filter(a =>
+    !search ||
+    a.titulo.toLowerCase().includes(search.toLowerCase()) ||
+    (a.subtitulo?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+    (a.categoria?.toLowerCase().includes(search.toLowerCase()) ?? false)
+  )
 
   if (selected) {
     return (
@@ -217,36 +260,80 @@ export default function PageDecision() {
         <p className="text-sm text-gray-500 mt-1">{t('decision.subtitle')}</p>
       </div>
 
-      {categories.map(cat => {
-        const catAlgos = ALGORITMOS.filter(a => a.categoria === cat.id)
-        if (catAlgos.length === 0) return null
-        return (
-          <div key={cat.id}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{cat.label}</p>
-            <div className="space-y-2">
-              {catAlgos.map(algo => (
-                <button
-                  key={algo.id}
-                  onClick={() => setSelected(algo)}
-                  className={`card w-full text-left p-4 hover:shadow-md transition-all border ${cat.color} active:scale-98`}
-                >
-                  <div className="flex items-center gap-3">
-                    <GitBranch size={18} className="flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm leading-snug">{algo.titulo}</p>
-                      <p className="text-xs mt-0.5 opacity-70 leading-snug">{algo.subtitulo}</p>
+      {/* Search */}
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar algoritmo…"
+          className="input-field pl-8 text-sm"
+        />
+      </div>
+
+      {search ? (
+        /* Flat filtered list when searching */
+        <div className="space-y-2">
+          {filtered.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-8">Sin resultados para "{search}"</p>
+          )}
+          {filtered.map(algo => {
+            const cat = categories.find(c => c.id === algo.categoria) ?? categories[0]
+            return (
+              <button
+                key={algo.id}
+                onClick={() => setSelected(algo)}
+                className={`card w-full text-left p-4 hover:shadow-md transition-all border ${cat.color} active:scale-98`}
+              >
+                <div className="flex items-center gap-3">
+                  <GitBranch size={18} className="flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm leading-snug">{algo.titulo}</p>
+                    <p className="text-xs mt-0.5 opacity-70 leading-snug">{algo.subtitulo}</p>
+                  </div>
+                  <ChevronRight size={16} className="flex-shrink-0 opacity-50" />
+                </div>
+                <div className="mt-2 ml-7">
+                  <span className="text-xs opacity-60">{algo.nodos.length} pasos · {algo.fuente}</span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        /* Categorized list when no search */
+        categories.map(cat => {
+          const catAlgos = ALGORITMOS.filter(a => a.categoria === cat.id)
+          if (catAlgos.length === 0) return null
+          return (
+            <div key={cat.id}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{cat.label}</p>
+              <div className="space-y-2">
+                {catAlgos.map(algo => (
+                  <button
+                    key={algo.id}
+                    onClick={() => setSelected(algo)}
+                    className={`card w-full text-left p-4 hover:shadow-md transition-all border ${cat.color} active:scale-98`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <GitBranch size={18} className="flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm leading-snug">{algo.titulo}</p>
+                        <p className="text-xs mt-0.5 opacity-70 leading-snug">{algo.subtitulo}</p>
+                      </div>
+                      <ChevronRight size={16} className="flex-shrink-0 opacity-50" />
                     </div>
-                    <ChevronRight size={16} className="flex-shrink-0 opacity-50" />
-                  </div>
-                  <div className="mt-2 ml-7">
-                    <span className="text-xs opacity-60">{algo.nodos.length} pasos · {algo.fuente}</span>
-                  </div>
-                </button>
-              ))}
+                    <div className="mt-2 ml-7">
+                      <span className="text-xs opacity-60">{algo.nodos.length} pasos · {algo.fuente}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })
+      )}
     </div>
   )
 }
